@@ -1,5 +1,6 @@
 package com.example.xyzreader.ui;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.app.LoaderManager;
 import android.content.Intent;
@@ -16,7 +17,9 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.NavUtils;
 import android.support.v4.app.ShareCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
 import android.support.v7.graphics.Palette.PaletteAsyncListener;
 import android.support.v7.widget.Toolbar;
@@ -25,6 +28,7 @@ import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -74,6 +78,8 @@ public class ArticleDetailFragment extends Fragment implements
   private SimpleDateFormat outputFormat = new SimpleDateFormat();
   // Most time functions can only handle 1902 - 2037
   private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2, 1, 1);
+  private TextView bylineView;
+  private TextView bodyView;
 
   /**
    * Mandatory empty constructor for the fragment manager to instantiate the
@@ -120,11 +126,32 @@ public class ArticleDetailFragment extends Fragment implements
   }
 
   @Override
+  public void onResume() {
+    super.onResume();
+//    getActivity().findViewById(R.id.app_bar).setVisibility(View.GONE);
+    AppCompatActivity activity = (AppCompatActivity) getActivity();
+    activity.setSupportActionBar(mToolbar);
+//    activity.getSupportActionBar().setHomeButtonEnabled(true);
+    activity.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+  }
+
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    switch (item.getItemId()) {
+      // Respond to the action bar's Up/Home button
+      case android.R.id.home:
+        NavUtils.navigateUpFromSameTask(getActivity());
+        return true;
+    }
+    return super.onOptionsItemSelected(item);
+  }
+
+  @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container,
                            Bundle savedInstanceState) {
     mRootView = inflater.inflate(R.layout.fragment_article_detail, container, false);
-    mToolbar = mRootView.findViewById(R.id.toolbar);
-    collapsingToolbarLayout = mRootView.findViewById(R.id.toolbar_layout);
+    mToolbar = getActivity().findViewById(R.id.toolbar);
+    collapsingToolbarLayout = getActivity().findViewById(R.id.toolbar_layout);
 //        mDrawInsetsFrameLayout = (DrawInsetsFrameLayout)
 //                mRootView.findViewById(R.id.draw_insets_frame_layout);
 //        mDrawInsetsFrameLayout.setOnInsetsCallback(new DrawInsetsFrameLayout.OnInsetsCallback() {
@@ -145,7 +172,7 @@ public class ArticleDetailFragment extends Fragment implements
 //            }
 //        });
 
-    mPhotoView = (ImageView) mRootView.findViewById(R.id.photo);
+    mPhotoView = (ImageView) getActivity().findViewById(R.id.photo);
 //        mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
 
     mStatusBarColorDrawable = new ColorDrawable(0);
@@ -160,6 +187,11 @@ public class ArticleDetailFragment extends Fragment implements
                                              .getIntent(), getString(R.string.action_share)));
       }
     });
+
+    bylineView = mRootView.findViewById(R.id.article_byline);
+    bylineView.setMovementMethod(new LinkMovementMethod());
+    bodyView = mRootView.findViewById(R.id.article_body);
+    bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
     bindViews();
     return mRootView;
@@ -195,19 +227,12 @@ public class ArticleDetailFragment extends Fragment implements
       return;
     }
 
-    TextView titleView = mRootView.findViewById(R.id.article_title);
-    TextView bylineView = mRootView.findViewById(R.id.article_byline);
-    bylineView.setMovementMethod(new LinkMovementMethod());
-    TextView bodyView = mRootView.findViewById(R.id.article_body);
-
-
-    bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
-
     if (mCursor != null) {
       mRootView.setAlpha(0);
       mRootView.setVisibility(View.VISIBLE);
       mRootView.animate().alpha(1);
-      titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
+      collapsingToolbarLayout.setTitle(mCursor.getString(ArticleLoader.Query.TITLE));
+//      titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
       Date publishedDate = parsePublishedDate();
       if (!publishedDate.before(START_OF_EPOCH.getTime())) {
         bylineView.setText(Html.fromHtml(
@@ -240,13 +265,9 @@ public class ArticleDetailFragment extends Fragment implements
                   int darkMutedColor = palette.getDarkMutedColor(getActivity().getResources().getColor(R.color.theme_primary_dark));
                   mPhotoView.setImageBitmap(imageContainer.getBitmap());
                   mRootView.findViewById(R.id.meta_bar).setBackgroundColor(darkMutedColor);
-                  mToolbar.setBackgroundColor(darkMutedColor);
+//                  mToolbar.setBackgroundColor(darkMutedColor);
                   collapsingToolbarLayout.setContentScrimColor(darkMutedColor);
                   shareButton.setBackgroundTintList(ColorStateList.valueOf(darkMutedColor));
-                  //TODO only set the window if this fragment is shown
-//                  if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
-//                    getActivity().getWindow().setStatusBarColor(darkMutedColor);
-//                  }
                 }
               });
 
@@ -260,9 +281,9 @@ public class ArticleDetailFragment extends Fragment implements
         });
     } else {
       mRootView.setVisibility(View.GONE);
-      titleView.setText("N/A");
-      bylineView.setText("N/A");
-      bodyView.setText("N/A");
+//      titleView.setText("N/A");
+//      bylineView.setText("N/A");
+//      bodyView.setText("N/A");
     }
   }
 
