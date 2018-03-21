@@ -1,22 +1,17 @@
 package com.example.xyzreader.ui;
 
-import android.app.Activity;
-import android.app.Fragment;
-import android.app.LoaderManager;
 import android.content.Intent;
-import android.content.Loader;
 import android.content.res.ColorStateList;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
-import android.os.Build.VERSION;
-import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.app.NavUtils;
 import android.support.v4.app.ShareCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -49,8 +44,7 @@ import java.util.GregorianCalendar;
  * either contained in a {@link ArticleListActivity} in two-pane mode (on
  * tablets) or a {@link ArticleDetailActivity} on handsets.
  */
-public class ArticleDetailFragment extends Fragment implements
-  LoaderManager.LoaderCallbacks<Cursor> {
+public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<Cursor>{
   private static final String TAG = "ArticleDetailFragment";
 
   public static final String ARG_ITEM_ID = "item_id";
@@ -252,7 +246,9 @@ public class ArticleDetailFragment extends Fragment implements
             + "</font>"));
 
       }
+
       bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
+//      bodyView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
       ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
         .get(mCursor.getString(ArticleLoader.Query.PHOTO_URL), new ImageLoader.ImageListener() {
           @Override
@@ -288,12 +284,12 @@ public class ArticleDetailFragment extends Fragment implements
   }
 
   @Override
-  public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+  public android.support.v4.content.Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
     return ArticleLoader.newInstanceForItemId(getActivity(), mItemId);
   }
 
   @Override
-  public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
+  public void onLoadFinished(@NonNull android.support.v4.content.Loader<Cursor> loader, Cursor cursor) {
     if (!isAdded()) {
       if (cursor != null) {
         cursor.close();
@@ -312,7 +308,7 @@ public class ArticleDetailFragment extends Fragment implements
   }
 
   @Override
-  public void onLoaderReset(Loader<Cursor> cursorLoader) {
+  public void onLoaderReset(@NonNull android.support.v4.content.Loader<Cursor> loader) {
     mCursor = null;
     bindViews();
   }
