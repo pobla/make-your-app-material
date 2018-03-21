@@ -263,7 +263,8 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
                   mRootView.findViewById(R.id.meta_bar).setBackgroundColor(darkMutedColor);
 //                  mToolbar.setBackgroundColor(darkMutedColor);
                   collapsingToolbarLayout.setContentScrimColor(darkMutedColor);
-                  shareButton.setBackgroundTintList(ColorStateList.valueOf(darkMutedColor));
+                  int vibrantColor = palette.getVibrantColor(getActivity().getResources().getColor(R.color.theme_accent));
+                  shareButton.setBackgroundTintList(ColorStateList.valueOf(vibrantColor));
                 }
               });
 

@@ -39,6 +39,6 @@ dependencies {
     compile 'com.squareup.okhttp3:okhttp:3.9.0'
     compile files('libs/volley.jar')
 
-    compile 'com.dmitrymalkovich.android:material-design-dimens:1.4'
+    implementation 'com.dmitrymalkovich.android:material-design-dimens:1.4'
 
 }
