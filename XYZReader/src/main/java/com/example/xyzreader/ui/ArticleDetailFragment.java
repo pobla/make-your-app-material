@@ -26,8 +26,8 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.volley.VolleyError;
@@ -45,7 +45,7 @@ import java.util.GregorianCalendar;
  * either contained in a {@link ArticleListActivity} in two-pane mode (on
  * tablets) or a {@link ArticleDetailActivity} on handsets.
  */
-public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<Cursor>{
+public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<Cursor> {
   private static final String TAG = "ArticleDetailFragment";
 
   public static final String ARG_ITEM_ID = "item_id";
@@ -64,7 +64,7 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
   //    private View mPhotoContainerView;
   private FloatingActionButton shareButton;
   private ImageView mPhotoView;
-  private FrameLayout metaBar;
+  private LinearLayout metaBar;
   private int mScrollY;
   private boolean mIsCard = false;
 //  private int mStatusBarFullOpacityBottom;
@@ -73,7 +73,8 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
   private SimpleDateFormat outputFormat = new SimpleDateFormat();
   // Most time functions can only handle 1902 - 2037
   private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2, 1, 1);
-  private TextView bylineView;
+  private TextView articleAuthor;
+  private TextView articleDate;
   private TextView bodyView;
 
   /**
@@ -101,7 +102,7 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
 
     mIsCard = getResources().getBoolean(R.bool.detail_is_card);
     setHasOptionsMenu(true);
-    getLoaderManager().restartLoader((int)mItemId, null, this);
+    getLoaderManager().restartLoader((int) mItemId, null, this);
   }
 
   public ArticleDetailActivity getActivityCast() {
@@ -151,12 +152,12 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
       }
     });
 
-    bylineView = mRootView.findViewById(R.id.article_byline);
-    bylineView.setMovementMethod(new LinkMovementMethod());
+    articleAuthor = mRootView.findViewById(R.id.article_byline);
+    articleDate = mRootView.findViewById(R.id.article_date);
+    articleAuthor.setMovementMethod(new LinkMovementMethod());
     bodyView = mRootView.findViewById(R.id.article_body);
     bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
-//    bindViews();
     return mRootView;
   }
 
@@ -183,24 +184,18 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
       mRootView.animate().alpha(1);
       collapsingToolbarLayout.setTitle(mCursor.getString(ArticleLoader.Query.TITLE));
       Date publishedDate = parsePublishedDate();
+      String stringPublishedDate;
       if (!publishedDate.before(START_OF_EPOCH.getTime())) {
-        bylineView.setText(Html.fromHtml(
-          DateUtils.getRelativeTimeSpanString(
-            publishedDate.getTime(),
-            System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-            DateUtils.FORMAT_ABBREV_ALL).toString()
-            + " by <font color='#ffffff'>"
-            + mCursor.getString(ArticleLoader.Query.AUTHOR)
-            + "</font>"));
-
+        stringPublishedDate = DateUtils.getRelativeTimeSpanString(
+          publishedDate.getTime(),
+          System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
+          DateUtils.FORMAT_ABBREV_ALL).toString();
       } else {
-        // If date is before 1902, just show the string
-        bylineView.setText(Html.fromHtml(
-          outputFormat.format(publishedDate) + " by <font color='#ffffff'>"
-            + mCursor.getString(ArticleLoader.Query.AUTHOR)
-            + "</font>"));
-
+        stringPublishedDate = outputFormat.format(publishedDate);
       }
+
+      articleDate.setText(stringPublishedDate);
+      articleAuthor.setText(getString(R.string.space_author_by, mCursor.getString(ArticleLoader.Query.AUTHOR)));
 
       bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
       ImageLoaderHelper.getInstance(getActivity()).getImageLoader()

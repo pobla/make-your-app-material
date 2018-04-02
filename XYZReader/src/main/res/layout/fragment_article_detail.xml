@@ -72,12 +72,12 @@
       android:layout_height="match_parent">
 
 
-      <FrameLayout
+      <LinearLayout
         android:id="@+id/meta_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/detail_metabar_vert_padding"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:background="@color/theme_primary"
         android:paddingBottom="@dimen/material_layout_keylines_horizontal_mobile_margin"
         android:paddingLeft="@dimen/material_layout_keylines_horizontal_mobile_margin"
@@ -86,13 +86,21 @@
 
 
         <TextView
-          android:id="@+id/article_byline"
-          style="?android:attr/textAppearanceSmall"
+          android:id="@+id/article_date"
+          style="@style/TextAppearance.AppCompat.Body1"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:textColor="#8fff"
-          tools:text="Jan 1, 1982 by"/>
-      </FrameLayout>
+          tools:text="Jan 1, 1982"/>
+
+        <TextView
+          android:id="@+id/article_byline"
+          style="@style/TextAppearance.AppCompat.Body2"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:textColor="#8fff"
+          tools:text=" by Arthur C. Clark"/>
+      </LinearLayout>
 
 
       <LinearLayout

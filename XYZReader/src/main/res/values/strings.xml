@@ -10,5 +10,6 @@
     <string name="up">Up</string>
 
     <string name="author_by">by %s</string>
+    <string name="space_author_by">&#160;by %s</string>
 
 </resources>
