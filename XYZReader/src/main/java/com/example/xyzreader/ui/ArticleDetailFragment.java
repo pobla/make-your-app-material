@@ -231,9 +231,6 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
         });
     } else {
       mRootView.setVisibility(View.GONE);
-//      titleView.setText("N/A");
-//      bylineView.setText("N/A");
-//      bodyView.setText("N/A");
     }
   }
 
