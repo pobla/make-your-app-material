@@ -2,17 +2,16 @@ package com.example.xyzreader.ui;
 
 import android.content.Intent;
 import android.content.res.ColorStateList;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.LoaderManager.LoaderCallbacks;
-import android.support.v4.app.NavUtils;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.ShareCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
@@ -23,7 +22,6 @@ import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -33,7 +31,6 @@ import android.widget.TextView;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.example.xyzreader.R;
-import com.example.xyzreader.data.ArticleLoader;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -45,14 +42,13 @@ import java.util.GregorianCalendar;
  * either contained in a {@link ArticleListActivity} in two-pane mode (on
  * tablets) or a {@link ArticleDetailActivity} on handsets.
  */
-public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<Cursor> {
+public class ArticleDetailFragment extends Fragment {
   private static final String TAG = "ArticleDetailFragment";
 
-  public static final String ARG_ITEM_ID = "item_id";
+  public static final String ARG_ITEM = "item";
   private static final float PARALLAX_FACTOR = 1.25f;
 
-  private Cursor mCursor;
-  private long mItemId;
+  private Article article;
   private View mRootView;
   private Toolbar mToolbar;
   private CollapsingToolbarLayout collapsingToolbarLayout;
@@ -84,9 +80,9 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
   public ArticleDetailFragment() {
   }
 
-  public static ArticleDetailFragment newInstance(long itemId) {
+  public static ArticleDetailFragment newInstance(Article article) {
     Bundle arguments = new Bundle();
-    arguments.putLong(ARG_ITEM_ID, itemId);
+    arguments.putParcelable(ARG_ITEM, article);
     ArticleDetailFragment fragment = new ArticleDetailFragment();
     fragment.setArguments(arguments);
     return fragment;
@@ -96,23 +92,23 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    if (getArguments().containsKey(ARG_ITEM_ID)) {
-      mItemId = getArguments().getLong(ARG_ITEM_ID);
+    if (getArguments().containsKey(ARG_ITEM)) {
+      article = getArguments().getParcelable(ARG_ITEM);
     }
 
     mIsCard = getResources().getBoolean(R.bool.detail_is_card);
     setHasOptionsMenu(true);
-    getLoaderManager().restartLoader((int) mItemId, null, this);
-  }
-
-  public ArticleDetailActivity getActivityCast() {
-    return (ArticleDetailActivity) getActivity();
   }
 
   @Override
   public void onResume() {
     super.onResume();
-//    getActivity().findViewById(R.id.app_bar).setVisibility(View.GONE);
+    if (getUserVisibleHint()) {
+      setActionBar();
+    }
+  }
+
+  private void setActionBar() {
     AppCompatActivity activity = (AppCompatActivity) getActivity();
     activity.setSupportActionBar(mToolbar);
     activity.getSupportActionBar().setHomeButtonEnabled(true);
@@ -120,15 +116,13 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
   }
 
   @Override
-  public boolean onOptionsItemSelected(MenuItem item) {
-    switch (item.getItemId()) {
-      // Respond to the action bar's Up/Home button
-      case android.R.id.home:
-        NavUtils.navigateUpFromSameTask(getActivity());
-        return true;
+  public void setUserVisibleHint(boolean isVisibleToUser) {
+    super.setUserVisibleHint(isVisibleToUser);
+    if (isVisibleToUser && getActivity() != null) {
+      setActionBar();
     }
-    return super.onOptionsItemSelected(item);
   }
+
 
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -161,10 +155,15 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
     return mRootView;
   }
 
+  @Override
+  public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+    super.onViewCreated(view, savedInstanceState);
+    bindViews();
+  }
+
   private Date parsePublishedDate() {
     try {
-      String date = mCursor.getString(ArticleLoader.Query.PUBLISHED_DATE);
-      return dateFormat.parse(date);
+      return dateFormat.parse(article.getPublisheDate());
     } catch (ParseException ex) {
       Log.e(TAG, ex.getMessage());
       Log.i(TAG, "passing today's date");
@@ -178,11 +177,11 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
     }
     mRootView.setVisibility(View.VISIBLE);
 
-    if (mCursor != null) {
+    if (article != null) {
       mRootView.setAlpha(0);
       mRootView.setVisibility(View.VISIBLE);
       mRootView.animate().alpha(1);
-      collapsingToolbarLayout.setTitle(mCursor.getString(ArticleLoader.Query.TITLE));
+      collapsingToolbarLayout.setTitle(article.getTitle());
       Date publishedDate = parsePublishedDate();
       String stringPublishedDate;
       if (!publishedDate.before(START_OF_EPOCH.getTime())) {
@@ -195,11 +194,12 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
       }
 
       articleDate.setText(stringPublishedDate);
-      articleAuthor.setText(getString(R.string.space_author_by, mCursor.getString(ArticleLoader.Query.AUTHOR)));
+      articleAuthor.setText(getString(R.string.space_author_by, article.getAuthor()));
 
-      bodyView.setText(Html.fromHtml(mCursor.getString(ArticleLoader.Query.BODY).replaceAll("(\r\n|\n)", "<br />")));
+      bodyView.setText(Html.fromHtml(article.getBody().replaceAll("(\r\n|\n)", "<br />")));
+      final FragmentActivity activity = getActivity();
       ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
-        .get(mCursor.getString(ArticleLoader.Query.PHOTO_URL), new ImageLoader.ImageListener() {
+        .get(article.getPhotoUrl(), new ImageLoader.ImageListener() {
           @Override
           public void onResponse(final ImageLoader.ImageContainer imageContainer, boolean b) {
             Bitmap bitmap = imageContainer.getBitmap();
@@ -207,11 +207,11 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
               Palette.from(bitmap).generate(new PaletteAsyncListener() {
                 @Override
                 public void onGenerated(@NonNull Palette palette) {
-                  int darkMutedColor = palette.getDarkMutedColor(getActivity().getResources().getColor(R.color.theme_primary_dark));
+                  int darkMutedColor = palette.getDarkMutedColor(activity.getResources().getColor(R.color.theme_primary_dark));
                   mPhotoView.setImageBitmap(imageContainer.getBitmap());
                   metaBar.setBackgroundColor(darkMutedColor);
                   collapsingToolbarLayout.setContentScrimColor(darkMutedColor);
-                  int vibrantColor = palette.getVibrantColor(getActivity().getResources().getColor(R.color.theme_accent));
+                  int vibrantColor = palette.getVibrantColor(activity.getResources().getColor(R.color.theme_accent));
                   shareButton.setBackgroundTintList(ColorStateList.valueOf(vibrantColor));
                 }
               });
@@ -227,36 +227,6 @@ public class ArticleDetailFragment extends Fragment implements LoaderCallbacks<C
     } else {
       mRootView.setVisibility(View.GONE);
     }
-  }
-
-  @Override
-  public android.support.v4.content.Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-    return ArticleLoader.newInstanceForItemId(getActivity(), mItemId);
-  }
-
-  @Override
-  public void onLoadFinished(@NonNull android.support.v4.content.Loader<Cursor> loader, Cursor cursor) {
-    if (!isAdded()) {
-      if (cursor != null) {
-        cursor.close();
-      }
-      return;
-    }
-
-    mCursor = cursor;
-    if (mCursor != null && !mCursor.moveToFirst()) {
-      Log.e(TAG, "Error reading item detail cursor");
-      mCursor.close();
-      mCursor = null;
-    }
-
-    bindViews();
-  }
-
-  @Override
-  public void onLoaderReset(@NonNull android.support.v4.content.Loader<Cursor> loader) {
-    mCursor = null;
-    bindViews();
   }
 
 }
