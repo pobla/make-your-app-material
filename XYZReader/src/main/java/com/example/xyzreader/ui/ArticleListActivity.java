@@ -84,6 +84,16 @@ public class ArticleListActivity extends AppCompatActivity implements
     unregisterReceiver(mRefreshingReceiver);
   }
 
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+  }
+
+  @Override
+  protected void onRestoreInstanceState(Bundle savedInstanceState) {
+    super.onRestoreInstanceState(savedInstanceState);
+  }
+
   private boolean mIsRefreshing = false;
 
   private BroadcastReceiver mRefreshingReceiver = new BroadcastReceiver() {
@@ -187,6 +197,8 @@ public class ArticleListActivity extends AppCompatActivity implements
       return mCursor.getCount();
     }
   }
+
+
 
   public static class ViewHolder extends RecyclerView.ViewHolder {
     public DynamicHeightNetworkImageView thumbnailView;
