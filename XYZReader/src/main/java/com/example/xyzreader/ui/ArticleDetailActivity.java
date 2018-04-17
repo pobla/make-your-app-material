@@ -2,8 +2,6 @@ package com.example.xyzreader.ui;
 
 import android.database.Cursor;
 import android.os.Bundle;
-import android.os.Parcelable;
-import android.provider.MediaStore.Audio.ArtistColumns;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -18,6 +16,8 @@ import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ArticleLoader.Query;
 import com.example.xyzreader.data.ItemsContract;
+
+import static com.example.xyzreader.ui.ArticleDetailFragment.ARG_ITEM;
 
 /**
  * An activity representing a single Article detail screen, letting you swipe between articles.
@@ -108,20 +108,23 @@ public class ArticleDetailActivity extends AppCompatActivity
   }
 
 
-//  Arreglar el rotate screen
-//  @Override
-//  protected void onSaveInstanceState(Bundle outState) {
-//    super.onSaveInstanceState(outState);
-//    outState.putInt("currentItem", mPager.getCurrentItem());
-//  }
-//
-//  @Override
-//  protected void onRestoreInstanceState(Bundle savedInstanceState) {
-//    super.onRestoreInstanceState(savedInstanceState);
-//    int currentItem = savedInstanceState.getInt("currentItem");
-//    mPager.setCurrentItem(currentItem);
-//    mStartId = currentItem;
-//  }
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    Bundle arguments = mPagerAdapter.getItem(mPager.getCurrentItem()).getArguments();
+    if (arguments != null && arguments.containsKey(ARG_ITEM)) {
+      Article article = mPagerAdapter.getItem(mPager.getCurrentItem()).getArguments().getParcelable(ARG_ITEM);
+      outState.putLong(ARG_ITEM, article.getId());
+    }
+    outState.putParcelable(mPagerAdapter.getClass().getCanonicalName(), mPagerAdapter.saveState());
+  }
+
+  @Override
+  protected void onRestoreInstanceState(Bundle savedInstanceState) {
+    super.onRestoreInstanceState(savedInstanceState);
+    mStartId = savedInstanceState.getLong(ARG_ITEM);
+    mPagerAdapter.restoreState(savedInstanceState.getParcelable(mPagerAdapter.getClass().getCanonicalName()), getClassLoader());
+  }
 
   private class MyPagerAdapter extends FragmentStatePagerAdapter {
 
