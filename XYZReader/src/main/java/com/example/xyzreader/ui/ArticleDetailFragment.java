@@ -2,9 +2,12 @@ package com.example.xyzreader.ui;
 
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -20,6 +23,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,10 +31,11 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.ImageLoader;
 import com.example.xyzreader.R;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -42,7 +47,7 @@ import java.util.GregorianCalendar;
  * either contained in a {@link ArticleListActivity} in two-pane mode (on
  * tablets) or a {@link ArticleDetailActivity} on handsets.
  */
-public class ArticleDetailFragment extends Fragment {
+public class ArticleDetailFragment extends Fragment implements Callback, PaletteAsyncListener {
   private static final String TAG = "ArticleDetailFragment";
 
   public static final String ARG_ITEM = "item";
@@ -52,8 +57,6 @@ public class ArticleDetailFragment extends Fragment {
   private View mRootView;
   private Toolbar mToolbar;
   private CollapsingToolbarLayout collapsingToolbarLayout;
-  //    private ObservableScrollView mScrollView;
-//    private DrawInsetsFrameLayout mDrawInsetsFrameLayout;
   private ColorDrawable mStatusBarColorDrawable;
 
   private int mTopInset;
@@ -151,6 +154,7 @@ public class ArticleDetailFragment extends Fragment {
     articleAuthor.setMovementMethod(new LinkMovementMethod());
     bodyView = mRootView.findViewById(R.id.article_body);
     bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
+    bodyView.setMovementMethod(new ScrollingMovementMethod());
 
     return mRootView;
   }
@@ -182,51 +186,59 @@ public class ArticleDetailFragment extends Fragment {
       mRootView.setVisibility(View.VISIBLE);
       mRootView.animate().alpha(1);
       collapsingToolbarLayout.setTitle(article.getTitle());
-      Date publishedDate = parsePublishedDate();
-      String stringPublishedDate;
-      if (!publishedDate.before(START_OF_EPOCH.getTime())) {
-        stringPublishedDate = DateUtils.getRelativeTimeSpanString(
-          publishedDate.getTime(),
-          System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-          DateUtils.FORMAT_ABBREV_ALL).toString();
-      } else {
-        stringPublishedDate = outputFormat.format(publishedDate);
-      }
+      String stringPublishedDate = getPublishDate();
 
       articleDate.setText(stringPublishedDate);
       articleAuthor.setText(getString(R.string.space_author_by, article.getAuthor()));
-
       bodyView.setText(Html.fromHtml(article.getBody().replaceAll("(\r\n|\n)", "<br />")));
+      bodyView.setText(article.getBody());
+
       final FragmentActivity activity = getActivity();
-      ImageLoaderHelper.getInstance(getActivity()).getImageLoader()
-        .get(article.getPhotoUrl(), new ImageLoader.ImageListener() {
-          @Override
-          public void onResponse(final ImageLoader.ImageContainer imageContainer, boolean b) {
-            Bitmap bitmap = imageContainer.getBitmap();
-            if (bitmap != null) {
-              Palette.from(bitmap).generate(new PaletteAsyncListener() {
-                @Override
-                public void onGenerated(@NonNull Palette palette) {
-                  int darkMutedColor = palette.getDarkMutedColor(activity.getResources().getColor(R.color.theme_primary_dark));
-                  mPhotoView.setImageBitmap(imageContainer.getBitmap());
-                  metaBar.setBackgroundColor(darkMutedColor);
-                  collapsingToolbarLayout.setContentScrimColor(darkMutedColor);
-                  int vibrantColor = palette.getVibrantColor(activity.getResources().getColor(R.color.theme_accent));
-                  shareButton.setBackgroundTintList(ColorStateList.valueOf(vibrantColor));
-                }
-              });
+      Picasso.with(activity)
+        .load(article.getPhotoUrl())
+        .into(mPhotoView, this);
 
-            }
-          }
-
-          @Override
-          public void onErrorResponse(VolleyError volleyError) {
-
-          }
-        });
     } else {
       mRootView.setVisibility(View.GONE);
     }
   }
 
+  private String getPublishDate() {
+    Date publishedDate = parsePublishedDate();
+    String stringPublishedDate;
+    if (!publishedDate.before(START_OF_EPOCH.getTime())) {
+      stringPublishedDate = DateUtils.getRelativeTimeSpanString(
+        publishedDate.getTime(),
+        System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
+        DateUtils.FORMAT_ABBREV_ALL).toString();
+    } else {
+      stringPublishedDate = outputFormat.format(publishedDate);
+    }
+    return stringPublishedDate;
+  }
+
+  @Override
+  public void onSuccess() {
+    Bitmap bitmap = ((BitmapDrawable) mPhotoView.getDrawable()).getBitmap();
+    if (bitmap != null) {
+      Palette.from(bitmap).generate(this);
+    }
+
+
+  }
+
+  @Override
+  public void onError() {
+    Toast.makeText(getActivity(), "Error loading image", Toast.LENGTH_SHORT).show();
+  }
+
+  @Override
+  public void onGenerated(@NonNull Palette palette) {
+    Resources resources = metaBar.getResources();
+    int darkMutedColor = palette.getDarkMutedColor(resources.getColor(R.color.theme_primary_dark));
+    metaBar.setBackgroundColor(darkMutedColor);
+    collapsingToolbarLayout.setContentScrimColor(darkMutedColor);
+    int vibrantColor = palette.getVibrantColor(resources.getColor(R.color.theme_accent));
+    shareButton.setBackgroundTintList(ColorStateList.valueOf(vibrantColor));
+  }
 }
